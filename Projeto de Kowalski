@@ -1,0 +1,164 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+#define MAX_PLAYERS 10
+#define MAX_NAME_LENGTH 50
+#define ADMIN_PASSWORD "senha123" // Senha de administrador
+
+typedef struct {
+    char name[MAX_NAME_LENGTH];
+    int score;
+} Player;
+
+Player players[MAX_PLAYERS];
+int numPlayers = 0;
+
+// Função de comparação para a função qsort
+int comparePlayers(const void *a, const void *b) {
+    const Player *playerA = (const Player *)a;
+    const Player *playerB = (const Player *)b;
+
+    // Ordena em ordem decrescente de pontuação
+    return (playerB->score - playerA->score);
+}
+
+// Função para adicionar um novo jogador
+void addPlayer(char name[]) {
+    if (numPlayers < MAX_PLAYERS) {
+        strncpy(players[numPlayers].name, name, MAX_NAME_LENGTH - 1);
+        players[numPlayers].name[MAX_NAME_LENGTH - 1] = '\0';
+        players[numPlayers].score = 1000;
+        numPlayers++;
+    } else {
+        printf("Limite maximo de jogadores atingido!\n");
+    }
+}
+
+// Função para exibir o ranking dos jogadores
+void displayRank() {
+    int i; // Declaração de variável movida para o início da função
+    printf("\nRanking:\n");
+    for (i = 0; i < numPlayers; i++) {
+        printf("%d° lugar: %s - Pontuacao: %d\n", i+1, players[i].name, players[i].score);
+    }
+} 
+
+// Função para remover um jogador do ranking
+void removePlayer(int index) {
+    int i; // Declaração de variável movida para o início do bloco
+
+    if (index >= 0 && index < numPlayers) {
+        for (i = index; i < numPlayers - 1; i++) {
+            strcpy(players[i].name, players[i+1].name);
+            players[i].score = players[i+1].score;
+        }
+        numPlayers--;
+        printf("Jogador removido com sucesso!\n");
+    } else {
+        printf("Indice invalido. Tente novamente.\n");
+    }
+}
+// Função para editar o ranking (requer senha de administrador)
+void editRank(char password[]) {
+    if (strcmp(password, ADMIN_PASSWORD) == 0) {
+        printf("\nO que você deseja fazer?\n");
+        printf("1. Editar o ranking\n");
+        printf("2. Remover um jogador do ranking\n");
+        printf("Escolha a opcao (1 ou 2): ");
+
+        int choice;
+        scanf("%d", &choice);
+
+        if (choice == 1) {
+            // Aqui você pode implementar a lógica para editar o ranking
+            printf("\nRanking editado com sucesso!\n");
+        } else if (choice == 2) {
+            printf("\nDigite o indice do jogador que deseja remover: ");
+            int index;
+            scanf("%d", &index);
+            removePlayer(index - 1);
+        } else {
+            printf("\nOpcao invalida.\n");
+        }
+    } else {
+        printf("\nSenha incorreta. Acesso negado!\n");
+    }
+}
+
+int main() {
+    char name[MAX_NAME_LENGTH];
+    char password[20];
+    int difficulty, secretNumber, guess, attempts, maxAttempts;
+
+    printf("Bem vindo ao jogo de adivinhaçao de numeros!\n");
+
+    do {
+        printf("\nDigite seu nome (ou 'q' para sair): ");
+        scanf("%s", name);
+
+        if (strcmp(name, "q") == 0) {
+            break;
+        }
+
+        printf("Escolha a dificuldade (1 - Facil, 2 - Medio, 3 - Dificil): ");
+        scanf("%d", &difficulty);
+
+        switch (difficulty) {
+            case 1:
+                maxAttempts = 30;
+                break;
+            case 2:
+                maxAttempts = 20;
+                break;
+            case 3:
+                maxAttempts = 10;
+                break;
+            default:
+                printf("Opcao invalida. Escolha novamente.\n");
+                continue;
+        }
+
+        addPlayer(name);
+
+        secretNumber = rand() % 100 + 1;
+        attempts = 0;
+
+        while (attempts < maxAttempts) {
+            printf("\nTentativa %d de %d. Digite seu palpite: ", attempts+1, maxAttempts);
+            scanf("%d", &guess);
+
+            if (guess == secretNumber) {
+                printf("Parabens! Você acertou o numero %d em %d tentativas!\n", secretNumber, attempts+1);
+                break;
+            } else if (guess < secretNumber) {
+                printf("Tente um numero maior!\n");
+            } else {
+                printf("Tente um numero menor!\n");
+            }
+
+            // Decrementa a pontuação do jogador por tentativa errada
+            players[numPlayers - 1].score -= 20; 
+            attempts++;
+        }
+
+        if (attempts == maxAttempts) {
+            printf("\nVocê excedeu o número máximo de tentativas. O numero correto era %d.\n", secretNumber);
+        }
+
+        // Classifica os jogadores após cada jogo
+        qsort(players, numPlayers, sizeof(Player), comparePlayers);
+        displayRank();
+
+        printf("\nDigite a senha de administrador para editar o ranking (ou 'q' para continuar): ");
+        scanf("%s", password);
+
+        if (strcmp(password, "q") == 0) {
+            continue;
+        }
+
+        editRank(password);
+
+    } while (numPlayers < MAX_PLAYERS);
+                      
+}
